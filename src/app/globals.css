@@ -5,7 +5,7 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary outline-theme-purple inline-block rounded-full px-6 py-2 font-semibold shadow-sm;
+    @apply bg-primary outline-theme-blue inline-block rounded-full px-6 py-4 font-semibold text-lg shadow-md;
   }
   .text-primary {
     @apply bg-gradient-to-r from-[color:var(--theme-purple)] to-[color:var(--theme-blue)] bg-clip-text text-transparent !important;
@@ -25,8 +25,8 @@
 }
 
 :root {
-  --theme-purple: #5d52d9;
-  --theme-blue: #4fc5eb;
+  --theme-purple: #1E2F98;
+  --theme-blue: #1BA7EC;
   /* Keep the below variable names in sync with CSS_VARIABLES in globals-css.ts */
   --top-nav-bar-height: 3.5rem;
   --resume-control-bar-height: 3rem;

@@ -9,85 +9,78 @@ import { deepClone } from "lib/deep-clone";
 
 export const END_HOME_RESUME: Resume = {
   profile: {
-    name: "John Doe",
+    name: "Jim Halpert",
     summary:
-      "Software engineer obsessed with building exceptional products that people love",
-    email: "hello@openresume.com",
-    phone: "123-456-7890",
-    location: "NYC, NY",
-    url: "linkedin.com/in/john-doe",
+      "Salesman with a knack for building relationships, closing deals, and occasionally pulling pranks. Passionate about client satisfaction and innovative sales strategies.",
+    email: "jim@dundermifflin.com",
+    phone: "717-555-0100",
+    location: "Scranton, PA",
+    url: "linkedin.com/in/jim",
   },
   workExperiences: [
     {
-      company: "ABC Company",
-      jobTitle: "Software Engineer",
-      date: "May 2023 - Present",
+      company: "Dunder Mifflin Paper Company",
+      jobTitle: "Sales Representative",
+      date: "2001 - Present",
       descriptions: [
-        "Lead a cross-functional team of 5 engineers in developing a search bar, which enables thousands of daily active users to search content across the entire platform",
-        "Create stunning home page product demo animations that drives up sign up rate by 20%",
-        "Write clean code that is modular and easy to maintain while ensuring 100% test coverage",
+        "Increased regional sales revenue by 25% through personalized client strategies and effective relationship management.",
+    "Consistently ranked as one of the top-performing sales representatives in the Scranton branch for over 10 years.",
+    "Developed and maintained a portfolio of 50+ high-value clients, ensuring long-term satisfaction and retention.",
+    "Played a key role in landing the branch's largest account, contributing significantly to the company's profitability.",
+    "Mentored new sales staff, fostering a collaborative team environment and improving office-wide sales performance.",
       ],
     },
     {
-      company: "DEF Organization",
-      jobTitle: "Software Engineer Intern",
-      date: "Summer 2022",
+      company: "Athleap (Side Project)",
+      jobTitle: "Co-Founder",
+      date: "2014 - 2016",
       descriptions: [
-        "Re-architected the existing content editor to be mobile responsive that led to a 10% increase in mobile user engagement",
-        "Created a progress bar to help users track progress that drove up user retention by 15%",
-        "Discovered and fixed 5 bugs in the existing codebase to enhance user experience",
-      ],
-    },
-    {
-      company: "XYZ University",
-      jobTitle: "Research Assistant",
-      date: "Summer 2021",
-      descriptions: [
-        "Devised a new NLP algorithm in text classification that results in 10% accuracy increase",
-        "Compiled and presented research findings to a group of 20+ faculty and students",
+        "Developed a sports marketing company focused on connecting athletes with endorsement deals.",
+        "Built a client roster of semi-professional and professional athletes, negotiating contracts to maximize their visibility and revenue.",
+        "Managed day-to-day operations, overseeing marketing campaigns and client relations.",
       ],
     },
   ],
   educations: [
     {
-      school: "XYZ University",
-      degree: "Bachelor of Science in Computer Science",
-      date: "Sep 2019 - May 2023",
-      gpa: "3.8",
+      school: "Pennsylvania State University",
+      degree: "Bachelor of Science in Marketing",
+      date: "1997 - 2001",
+      gpa: "3.4",
       descriptions: [
-        "Won 1st place in 2022 Education Hackathon, 2nd place in 2023 Health Tech Competition",
-        "Teaching Assistant for Programming for the Web (2022 - 2023)",
-        "Coursework: Object-Oriented Programming (A+), Programming for the Web (A+), Cloud Computing (A), Introduction to Machine Learning (A-), Algorithms Analysis (A-)",
+        "Active member of the university's sales club, winning regional sales competitions.",
+        "Coursework: Sales Strategies, Consumer Psychology, Business Ethics, Marketing Analytics.",
       ],
     },
   ],
   projects: [
     {
-      project: "OpenResume",
-      date: "Spring 2023",
+      project: "Dunder Mifflin's Largest Client Account",
+      date: "2022",
       descriptions: [
-        "Created and launched a free resume builder web app that allows thousands of users to create professional resume easily and land their dream jobs",
+        "Secured and managed the largest client account in company history, increasing regional revenue by 35%.",
       ],
     },
   ],
   skills: {
     featuredSkills: [
-      { skill: "HTML", rating: 4 },
-      { skill: "CSS", rating: 4 },
-      { skill: "Python", rating: 3 },
-      { skill: "TypeScript", rating: 3 },
-      { skill: "React", rating: 3 },
-      { skill: "C++", rating: 2 },
+      { skill: "Sales", rating: 5 },
+      { skill: "Marketing", rating: 4 },
+      { skill: "Leadership", rating: 4 },
     ],
     descriptions: [
-      "Tech: React Hooks, GraphQL, Node.js, SQL, Postgres, NoSql, Redis, REST API, Git",
-      "Soft: Teamwork, Creative Problem Solving, Communication, Learning Mindset, Agile",
+      "Tech: CRM Tools (Salesforce), Microsoft Office Suite, Presentation Software",
+      "Soft: Communication, Teamwork, Humor, Adaptability, Creative Problem Solving",
     ],
   },
   custom: {
-    descriptions: [],
+    descriptions: [
+      "Known for building strong client relationships with a personal touch.",
+      "Excellent team player and mentor with a talent for keeping workplace morale high.",
+    ],
   },
 };
+
 
 export const START_HOME_RESUME: Resume = {
   profile: deepClone(initialProfile),
