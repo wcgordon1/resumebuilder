@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import logoSrc from "public/logp.png";
+import logoSrc from "public/logopo.png";
 import { cx } from "lib/cx";
 
 export const TopNavBar = () => {
