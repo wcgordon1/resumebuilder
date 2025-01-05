@@ -5,15 +5,15 @@ export async function parseAndRedirectToBuilder(filePath: string) {
     const supabase = createClient();
     
     // Get signed URL for the file
-    const { data: { signedUrl }, error: urlError } = await supabase.storage
+    const { data, error: urlError } = await supabase.storage
       .from('resumes')
       .createSignedUrl(filePath, 60); // 60 seconds is enough for parsing
 
     if (urlError) throw urlError;
-    if (!signedUrl) throw new Error('Failed to get file URL');
+    if (!data) throw new Error('Failed to get file URL');
 
     // Fetch the PDF file
-    const response = await fetch(signedUrl);
+    const response = await fetch(data.signedUrl);
     const blob = await response.blob();
 
     // Create a File object from the blob

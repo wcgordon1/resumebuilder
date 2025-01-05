@@ -4,7 +4,7 @@ import { createClient } from "lib/supabase/client";
 import { useAuth } from "lib/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useDispatch } from 'react-redux';
-import { setResume, initialProfile, initialWorkExperiences, initialEducations, initialProjects, initialSkills, initialCustom } from 'lib/redux/resumeSlice';
+import { setResume } from 'lib/redux/resumeSlice';
 import { setSettings } from 'lib/redux/settingsSlice';
 import { parseAndRedirectToBuilder } from "lib/utils/parseAndRedirect";
 import { TrashIcon } from "@heroicons/react/24/outline";
@@ -57,14 +57,14 @@ export function ResumesSection() {
   const handleViewResume = async (filePath: string) => {
     try {
       // Get signed URL that expires in 1 hour
-      const { data: { signedUrl }, error } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from('resumes')
         .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
 
       if (error) throw error;
-      if (signedUrl) {
-        window.open(signedUrl, '_blank');
-      }
+      if (!data) throw new Error('Failed to get signed URL');
+
+      window.open(data.signedUrl, '_blank');
     } catch (e) {
       console.error('Error getting signed URL:', e);
       // You might want to show an error toast here
@@ -138,7 +138,8 @@ export function ResumesSection() {
       if (dbError) throw dbError;
 
       // Update the local state to remove the deleted resume
-      setResumes(resumes.filter(r => r.id !== deleteModal.resume.id));
+      const resumeId = deleteModal.resume.id; // Store ID before async operations
+      setResumes(resumes.filter(r => r.id !== resumeId));
     } catch (error) {
       console.error('Error deleting resume:', error);
       throw error;
