@@ -3,12 +3,32 @@ import { ResumeDropzone } from 'components/ResumeDropzone';
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createClient } from "lib/supabase/client";
 
 export function ImportSection() {
   const [hasAddedResume, setHasAddedResume] = useState(false);
+  const supabase = createClient();
   
   const onFileUrlChange = (fileUrl: string) => {
     setHasAddedResume(Boolean(fileUrl));
+  };
+
+  const handleFileUpload = async (file: File) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Upload PDF to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('resume-pdfs')
+        .upload(`${user.id}/${file.name}`, file);
+
+      if (uploadError) throw uploadError;
+      return uploadData;
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
   };
 
   return (
