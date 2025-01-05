@@ -1,6 +1,7 @@
 import "globals.css";
 import { TopNavBar } from "components/TopNavBar";
 import { Analytics } from "@vercel/analytics/react";
+import { AuthProvider } from "lib/context/AuthContext";
 
 export const metadata = {
   title: "Prosper.cv - Resume Builder and Parser to help you get hired",
@@ -16,9 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <TopNavBar />
-        {children}
-        <Analytics />
+        <AuthProvider>
+          <TopNavBar />
+          {children}
+          <Analytics />
+        </AuthProvider>
       </body>
     </html>
   );

@@ -136,7 +136,8 @@ export const ResumeDropzone = ({
             </p>
             <p className="flex text-sm text-gray-500">
               <LockClosedIcon className="mr-1 mt-1 h-3 w-3 text-gray-400" />
-              File data is used locally and never leaves your browser
+              File data is used locally and never leaves your browser until you
+              save it to Prosper.cv
             </p>
           </>
         ) : (
