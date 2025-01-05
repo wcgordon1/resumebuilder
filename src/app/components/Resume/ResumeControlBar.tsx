@@ -1,113 +1,40 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useSetDefaultScale } from "components/Resume/hooks";
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "lib/supabase/client";
+import { useAppSelector } from "lib/redux/hooks";
+import { selectResume } from "lib/redux/resumeSlice";
+import { selectSettings } from "lib/redux/settingsSlice";
+import { SaveResumeModal } from "./SaveResumeModal";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { usePDF } from "@react-pdf/renderer";
+import { useSetDefaultScale } from "components/Resume/hooks";
 import dynamic from "next/dynamic";
-import { SaveResumeModal } from './SaveResumeModal';
-import { createClient } from 'lib/supabase/client';
-import { useAuth } from 'lib/context/AuthContext';
-import { useSelector } from 'react-redux';
-import { selectResume } from 'lib/redux/resumeSlice';
-import { selectSettings } from 'lib/redux/settingsSlice';
 
-const ResumeControlBar = ({
-  scale,
-  setScale,
-  documentSize,
-  document,
-  fileName,
-}: {
+type ResumeControlBarProps = {
   scale: number;
   setScale: (scale: number) => void;
   documentSize: string;
   document: JSX.Element;
   fileName: string;
-}) => {
+};
+
+export function ResumeControlBar({ scale, setScale, documentSize, document, fileName }: ResumeControlBarProps) {
+  const [showModal, setShowModal] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
+  const resumeData = useAppSelector(selectResume);
+  const settings = useAppSelector(selectSettings);
   const { scaleOnResize, setScaleOnResize } = useSetDefaultScale({
     setScale,
     documentSize,
   });
-  const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState<'save' | 'download'>('save');
-  const supabase = createClient();
-  const { user } = useAuth();
-  const resumeState = useSelector(selectResume);
-  const settingsState = useSelector(selectSettings);
 
-  const [instance, update] = usePDF({ document });
+  // Get resumeId from URL if it exists (for updates)
+  const resumeId = searchParams.get('id');
 
-  // Hook to update pdf when document changes
-  useEffect(() => {
-    update();
-  }, [update, document]);
-
-  const handleSaveResume = async (name: string) => {
-    try {
-      if (!user && modalType === 'save') {
-        throw new Error("Must be logged in to save resume");
-      }
-
-      if (!instance.url) {
-        throw new Error("PDF not generated yet");
-      }
-
-      if (modalType === 'download') {
-        return instance.url;
-      }
-
-      // Only proceed with Supabase upload if it's a save action
-      const response = await fetch(instance.url);
-      const pdfBlob = await response.blob();
-
-      // Create unique filename
-      const timestamp = Date.now();
-      const storagePath = `${user!.id}/${timestamp}-${name.replace(/[^a-zA-Z0-9-_.]/g, '_')}.pdf`;
-
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('resumes')
-        .upload(storagePath, pdfBlob, {
-          contentType: 'application/pdf',
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw new Error(`Failed to upload resume: ${uploadError.message}`);
-      }
-
-      // Get the public URL for the uploaded file
-      const { data: { publicUrl } } = supabase.storage
-        .from('resumes')
-        .getPublicUrl(storagePath);
-
-      // Save resume metadata to database with current resume AND settings state
-      const { error: dbError } = await supabase
-        .from('resumes')
-        .insert({
-          name,
-          user_id: user!.id,
-          file_path: storagePath,
-          resume_data: JSON.stringify(resumeState),
-          settings_data: JSON.stringify(settingsState)
-        });
-
-      if (dbError) {
-        // If database insert fails, try to clean up the uploaded file
-        await supabase.storage
-          .from('resumes')
-          .remove([storagePath]);
-        
-        console.error('Database insert error:', dbError);
-        throw new Error(`Failed to save resume metadata: ${dbError.message}`);
-      }
-
-    } catch (error) {
-      console.error('Error saving resume:', error);
-      throw error;
-    }
+  const handleSave = () => {
+    setShowModal(true);
   };
 
   return (
@@ -136,36 +63,30 @@ const ResumeControlBar = ({
           <span className="select-none">Autoscale</span>
         </label>
       </div>
+
       <div className="flex items-center gap-2">
         <button
-          onClick={() => {
-            setModalType('save');
-            setShowModal(true);
-          }}
+          onClick={() => router.push('/dashboard?section=resumes')}
           className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200"
         >
-          Save
+          Back
         </button>
         <button
-          onClick={() => {
-            setModalType('download');
-            setShowModal(true);
-          }}
+          onClick={handleSave}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
         >
-          Download
+          Save Resume
         </button>
       </div>
 
       <SaveResumeModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        onSave={handleSaveResume}
-        type={modalType}
+        resumeId={resumeId || undefined}
       />
     </div>
   );
-};
+}
 
 /**
  * Load ResumeControlBar client side since it uses usePDF, which is a web specific API

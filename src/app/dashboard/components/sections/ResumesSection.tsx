@@ -5,6 +5,7 @@ import { TrashIcon } from "@heroicons/react/24/outline";
 import { createClient } from "lib/supabase/client";
 import { useAppDispatch } from "lib/redux/hooks";
 import { setResumeData } from "lib/redux/resumeSlice";
+import { setSettings } from "lib/redux/settingsSlice";
 import { SavedResume } from "../../types";
 import { PublishResumeModal } from "../PublishResumeModal";
 import { PublishSuccessModal } from "../PublishSuccessModal";
@@ -59,11 +60,19 @@ export function ResumesSection() {
     try {
       setIsLoading({ ...isLoading, [resume.id]: true });
       const resumeData = JSON.parse(resume.resume_data);
+      console.log('Loaded resume data:', resumeData);
       
-      // Remove localStorage, just use Redux
+      // Update resume data
       dispatch(setResumeData(resumeData));
       
-      // Pass the resume ID in the URL
+      // Update settings/theme if they exist in the saved data
+      if (resumeData.settings) {
+        console.log('Found settings:', resumeData.settings);
+        dispatch(setSettings(resumeData.settings));
+      } else {
+        console.log('No settings found in resume data');
+      }
+      
       router.push(`/resume-builder?id=${resume.id}`);
     } catch (error) {
       console.error('Error parsing resume data:', error);
@@ -150,7 +159,7 @@ export function ResumesSection() {
                     onClick={() => handleViewPDF(resume.file_path!)}
                     className="rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-600 transition-colors hover:bg-gray-50"
                   >
-                    View PDF
+                    View
                   </button>
                 )}
               </div>
