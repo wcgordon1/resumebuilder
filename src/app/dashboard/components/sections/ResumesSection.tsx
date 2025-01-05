@@ -9,13 +9,9 @@ import { setSettings } from 'lib/redux/settingsSlice';
 import { parseAndRedirectToBuilder } from "lib/utils/parseAndRedirect";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import { DeleteResumeModal } from "../DeleteResumeModal";
-
-type SavedResume = {
-  id: string;
-  name: string;
-  created_at: string;
-  file_path: string;
-};
+import { PublishResumeModal } from '../PublishResumeModal';
+import { PublishSuccessModal } from '../PublishSuccessModal';
+import type { SavedResume } from '../../types';
 
 export function ResumesSection() {
   const dispatch = useDispatch();
@@ -30,6 +26,13 @@ export function ResumesSection() {
     isOpen: false,
     resume: null
   });
+  const [publishModal, setPublishModal] = useState<{ isOpen: boolean; resume: SavedResume | null }>({
+    isOpen: false,
+    resume: null
+  });
+  const [publicResumeId, setPublicResumeId] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState({ isOpen: false, url: '' });
+  const [publicUrl, setPublicUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchResumes() {
@@ -53,6 +56,27 @@ export function ResumesSection() {
 
     fetchResumes();
   }, [user, supabase]);
+
+  useEffect(() => {
+    async function fetchPublicInfo() {
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('public_resume_id, public_url')
+        .eq('id', user.id)
+        .single();
+
+      if (data?.public_resume_id) {
+        setPublicResumeId(data.public_resume_id);
+        if (data.public_url) {
+          setPublicUrl(`${window.location.origin}/profile/${data.public_url}`);
+        }
+      }
+    }
+
+    fetchPublicInfo();
+  }, [user]);
 
   const handleViewResume = async (filePath: string) => {
     try {
@@ -146,6 +170,14 @@ export function ResumesSection() {
     }
   };
 
+  const handlePublishedClick = (resume: SavedResume) => {
+    if (publicResumeId === resume.id && publicUrl) {
+      setSuccessModal({ isOpen: true, url: publicUrl });
+    } else {
+      setPublishModal({ isOpen: true, resume });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -193,29 +225,41 @@ export function ResumesSection() {
                   Created {new Date(resume.created_at).toLocaleDateString()}
                 </p>
               </div>
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 space-y-2">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleViewResume(resume.file_path)}
+                    className="flex-1 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => handleEdit(resume)}
+                    disabled={editingId === resume.id}
+                    className="flex-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                  >
+                    {editingId === resume.id ? (
+                      <span className="flex items-center justify-center">
+                        <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Loading...
+                      </span>
+                    ) : (
+                      'Edit'
+                    )}
+                  </button>
+                </div>
                 <button
-                  onClick={() => handleViewResume(resume.file_path)}
-                  className="flex-1 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200"
+                  onClick={() => handlePublishedClick(resume)}
+                  className={`w-full rounded-md px-3 py-1.5 text-sm font-medium ${
+                    publicResumeId === resume.id
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
                 >
-                  View
-                </button>
-                <button
-                  onClick={() => handleEdit(resume)}
-                  disabled={editingId === resume.id}
-                  className="flex-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                >
-                  {editingId === resume.id ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Loading...
-                    </span>
-                  ) : (
-                    'Edit'
-                  )}
+                  {publicResumeId === resume.id ? 'Published ✓' : 'Publish Resume'}
                 </button>
               </div>
             </div>
@@ -228,6 +272,23 @@ export function ResumesSection() {
         onClose={() => setDeleteModal({ isOpen: false, resume: null })}
         onDelete={handleDelete}
         resumeName={deleteModal.resume?.name ?? ''}
+      />
+
+      <PublishResumeModal
+        isOpen={publishModal.isOpen}
+        onClose={() => setPublishModal({ isOpen: false, resume: null })}
+        resume={publishModal.resume!}
+        userName={user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''}
+        onSuccess={(url) => {
+          setPublishModal({ isOpen: false, resume: null });
+          setSuccessModal({ isOpen: true, url });
+        }}
+      />
+
+      <PublishSuccessModal
+        isOpen={successModal.isOpen}
+        onClose={() => setSuccessModal({ isOpen: false, url: '' })}
+        publicUrl={successModal.url}
       />
     </div>
   );

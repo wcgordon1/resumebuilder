@@ -13,3 +13,12 @@ export const BOTTOM_SECTIONS = [
 export type SectionId = 
   | (typeof DASHBOARD_SECTIONS)[number]["id"] 
   | (typeof BOTTOM_SECTIONS)[number]["id"]; 
+
+export type SavedResume = {
+  id: string;
+  name: string;
+  created_at: string;
+  file_path: string;
+  resume_data: string;
+  user_id: string;
+}; 
