@@ -20,7 +20,6 @@
       }
     ],
     "baseUrl": "./src/app",
-    // Path Mapping Doc: https://www.typescriptlang.org/docs/handbook/module-resolution.html#path-mapping
     "paths": {
       "public/*": ["../../public/*"],
       "*": ["*"]

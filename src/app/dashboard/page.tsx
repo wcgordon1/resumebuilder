@@ -1,31 +1,23 @@
 "use client";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Providers } from "./components/Providers";
 import { Sidebar } from "./components/Sidebar";
 import { ResumesSection } from "./components/sections/ResumesSection";
 import { ProfileSection } from "./components/sections/ProfileSection";
 import { ImportSection } from "./components/sections/ImportSection";
-import { BuildSection } from "./components/sections/BuildSection";
-import { BillingSection } from "./components/sections/BillingSection";
-import { SettingsSection } from "./components/sections/SettingsSection";
-import { type SectionId } from "./types";
-import { Providers } from "./components/Providers";
+import type { SectionId } from "./types";
 
-export default function DashboardPage() {
-  const [isSidebarOpen, setSidebarOpen] = useState(true);
+export default function Dashboard() {
+  const [isOpen, setIsOpen] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const currentSection = (searchParams.get("section") as SectionId) || "resumes";
 
-  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
+  const section = searchParams.get("section") as SectionId;
+  const currentSection = section || "resumes";
 
   const handleSectionChange = (sectionId: SectionId) => {
-    if (sectionId === "build") {
-      router.push("/resume-builder");
-    } else {
-      router.push(`/dashboard?section=${sectionId}`);
-    }
+    router.push(`/dashboard?section=${sectionId}`);
   };
 
   const renderSection = () => {
@@ -36,12 +28,8 @@ export default function DashboardPage() {
         return <ProfileSection />;
       case "import":
         return <ImportSection />;
-      case "build":
-        return <BuildSection />;
-      case "billing":
-        return <BillingSection />;
       case "settings":
-        return <SettingsSection />;
+        return <div>Settings</div>;
       default:
         return <ResumesSection />;
     }
@@ -49,26 +37,13 @@ export default function DashboardPage() {
 
   return (
     <Providers>
-      <div className="flex h-[calc(100vh-var(--top-nav-bar-height))]">
-        <button
-          onClick={toggleSidebar}
-          className="fixed right-4 top-20 z-50 rounded-md bg-white p-2 shadow-md lg:hidden"
-          aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
-        >
-          {isSidebarOpen ? (
-            <XMarkIcon className="h-6 w-6" />
-          ) : (
-            <Bars3Icon className="h-6 w-6" />
-          )}
-        </button>
-
+      <div className="flex">
         <Sidebar
-          isOpen={isSidebarOpen}
+          isOpen={isOpen}
           currentSection={currentSection}
           onSectionChange={handleSectionChange}
         />
-
-        <main className="flex-1 overflow-auto p-6">
+        <main className="min-h-[calc(100vh-var(--top-nav-bar-height))] w-full bg-gray-50 p-8">
           {renderSection()}
         </main>
       </div>

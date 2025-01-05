@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RootState } from "lib/redux/store";
+import type { RootState } from "./store";
 import type {
   FeaturedSkill,
   Resume,
@@ -8,8 +8,14 @@ import type {
   ResumeProject,
   ResumeSkills,
   ResumeWorkExperience,
-} from "lib/redux/types";
-import type { ShowForm } from "lib/redux/settingsSlice";
+} from "./types";
+import type { ShowForm } from "./settingsSlice";
+
+type CreateChangeActionWithDescriptions<T> = {
+  idx: number;
+  field: keyof T;
+  value: string | string[];
+};
 
 export const initialProfile: ResumeProfile = {
   name: "",
@@ -63,17 +69,6 @@ export const initialResumeState: Resume = {
   custom: initialCustom,
 };
 
-// Keep the field & value type in sync with CreateHandleChangeArgsWithDescriptions (components\ResumeForm\types.ts)
-export type CreateChangeActionWithDescriptions<T> = {
-  idx: number;
-} & (
-  | {
-      field: Exclude<keyof T, "descriptions">;
-      value: string;
-    }
-  | { field: "descriptions"; value: string[] }
-);
-
 export const resumeSlice = createSlice({
   name: "resume",
   initialState: initialResumeState,
@@ -87,9 +82,7 @@ export const resumeSlice = createSlice({
     },
     changeWorkExperiences: (
       draft,
-      action: PayloadAction<
-        CreateChangeActionWithDescriptions<ResumeWorkExperience>
-      >
+      action: PayloadAction<CreateChangeActionWithDescriptions<ResumeWorkExperience>>
     ) => {
       const { idx, field, value } = action.payload;
       const workExperience = draft.workExperiences[idx];
@@ -215,11 +208,12 @@ export const {
 
 export const selectResume = (state: RootState) => state.resume;
 export const selectProfile = (state: RootState) => state.resume.profile;
-export const selectWorkExperiences = (state: RootState) =>
-  state.resume.workExperiences;
+export const selectWorkExperiences = (state: RootState) => state.resume.workExperiences;
 export const selectEducations = (state: RootState) => state.resume.educations;
 export const selectProjects = (state: RootState) => state.resume.projects;
 export const selectSkills = (state: RootState) => state.resume.skills;
 export const selectCustom = (state: RootState) => state.resume.custom;
+
+export const setResumeData = setResume;
 
 export default resumeSlice.reducer;

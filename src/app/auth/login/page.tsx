@@ -1,7 +1,7 @@
 "use client"
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
-import { createClient } from 'lib/supabase/client'
+import { createClient } from '../../lib/supabase/client'
 import Image from 'next/image'
 import logoSrc from "public/logopo.png"
 import { useRouter } from 'next/navigation'

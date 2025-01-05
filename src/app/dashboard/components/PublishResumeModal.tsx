@@ -45,16 +45,6 @@ export function PublishResumeModal({ isOpen, onClose, resume, userName, onSucces
       const publicUrl = generatePublicUrl(userName);
       const fullUrl = new URL(`/p/${publicUrl}`, window.location.origin).toString();
 
-      // Log the data we're about to save
-      console.log('Publishing resume with data:', {
-        id: resume.user_id,
-        public_resume_id: resume.id,
-        public_url: publicUrl,
-        public_resume_data: publicData,
-        is_public: true,
-        is_contact_enabled: contactEnabled
-      });
-
       const { error: updateError } = await supabase
         .from('profiles')
         .upsert({

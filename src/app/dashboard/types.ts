@@ -1,24 +1,20 @@
 export const DASHBOARD_SECTIONS = [
-  { id: "resumes", label: "My Resumes" },
-  { id: "profile", label: "Profile Page" },
-  { id: "import", label: "Resume Importer" },
-  { id: "build", label: "Build Fresh" },
+  { id: "resumes" as const, label: "My Resumes" },
+  { id: "profile" as const, label: "Profile" },
+  { id: "import" as const, label: "Import Resume" },
 ] as const;
 
 export const BOTTOM_SECTIONS = [
-  { id: "billing", label: "Billing" },
-  { id: "settings", label: "Account Settings" },
+  { id: "settings" as const, label: "Settings" },
 ] as const;
 
-export type SectionId = 
-  | (typeof DASHBOARD_SECTIONS)[number]["id"] 
-  | (typeof BOTTOM_SECTIONS)[number]["id"]; 
+export type SectionId = "resumes" | "profile" | "import" | "settings";
 
 export type SavedResume = {
   id: string;
-  name: string;
-  created_at: string;
-  file_path: string;
-  resume_data: string;
   user_id: string;
+  name: string;
+  resume_data: string;
+  file_path?: string;
+  updated_at: string;
 }; 

@@ -1,294 +1,193 @@
 "use client";
-import { useEffect, useState } from "react";
-import { createClient } from "lib/supabase/client";
-import { useAuth } from "lib/context/AuthContext";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useDispatch } from 'react-redux';
-import { setResume } from 'lib/redux/resumeSlice';
-import { setSettings } from 'lib/redux/settingsSlice';
-import { parseAndRedirectToBuilder } from "lib/utils/parseAndRedirect";
-import { TrashIcon } from "@heroicons/react/24/outline";
-import { DeleteResumeModal } from "../DeleteResumeModal";
-import { PublishResumeModal } from '../PublishResumeModal';
-import { PublishSuccessModal } from '../PublishSuccessModal';
-import type { SavedResume } from '../../types';
+import { createClient } from "lib/supabase/client";
+import { useAppDispatch } from "lib/redux/hooks";
+import { setResumeData } from "lib/redux/resumeSlice";
+import { SavedResume } from "../../types";
+import { PublishResumeModal } from "../PublishResumeModal";
+import { PublishSuccessModal } from "../PublishSuccessModal";
+import { parseAndRedirectToBuilder } from "../../../lib/utils/parseAndRedirect";
 
 export function ResumesSection() {
-  const dispatch = useDispatch();
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [publishedUrl, setPublishedUrl] = useState("");
+  const [selectedResume, setSelectedResume] = useState<SavedResume | null>(null);
   const [resumes, setResumes] = useState<SavedResume[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const supabase = createClient();
-  const { user } = useAuth();
+  const [userName, setUserName] = useState("");
   const router = useRouter();
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; resume: SavedResume | null }>({
-    isOpen: false,
-    resume: null
-  });
-  const [publishModal, setPublishModal] = useState<{ isOpen: boolean; resume: SavedResume | null }>({
-    isOpen: false,
-    resume: null
-  });
-  const [publicResumeId, setPublicResumeId] = useState<string | null>(null);
-  const [successModal, setSuccessModal] = useState({ isOpen: false, url: '' });
-  const [publicUrl, setPublicUrl] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const supabase = createClient();
 
-  useEffect(() => {
-    async function fetchResumes() {
-      try {
-        if (!user) return;
+  const fetchResumes = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-        const { data, error } = await supabase
-          .from('resumes')
-          .select('*')
-          .order('created_at', { ascending: false });
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
 
-        if (error) throw error;
-        setResumes(data || []);
-      } catch (e) {
-        console.error('Error fetching resumes:', e);
-        setError('Failed to load resumes');
-      } finally {
-        setIsLoading(false);
-      }
+    if (profile) {
+      setUserName(profile.full_name);
     }
 
-    fetchResumes();
-  }, [user, supabase]);
+    const { data: resumes } = await supabase
+      .from('resumes')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
 
-  useEffect(() => {
-    async function fetchPublicInfo() {
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('profiles')
-        .select('public_resume_id, public_url')
-        .eq('id', user.id)
-        .single();
-
-      if (data?.public_resume_id) {
-        setPublicResumeId(data.public_resume_id);
-        if (data.public_url) {
-          setPublicUrl(`${window.location.origin}/profile/${data.public_url}`);
-        }
-      }
-    }
-
-    fetchPublicInfo();
-  }, [user]);
-
-  const handleViewResume = async (filePath: string) => {
-    try {
-      // Get signed URL that expires in 1 hour
-      const { data, error } = await supabase.storage
-        .from('resumes')
-        .createSignedUrl(filePath, 3600); // 3600 seconds = 1 hour
-
-      if (error) throw error;
-      if (!data) throw new Error('Failed to get signed URL');
-
-      window.open(data.signedUrl, '_blank');
-    } catch (e) {
-      console.error('Error getting signed URL:', e);
-      // You might want to show an error toast here
+    if (resumes) {
+      setResumes(resumes);
     }
   };
 
-  const handleEdit = async (resume: SavedResume) => {
+  useEffect(() => {
+    fetchResumes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleEditResume = async (resume: SavedResume) => {
     try {
-      setEditingId(resume.id);
-      
-      // Get both resume and settings data
-      const { data, error } = await supabase
-        .from('resumes')
-        .select('resume_data, settings_data')
-        .eq('id', resume.id)
-        .single();
-
-      if (error) throw error;
-      if (!data?.resume_data) throw new Error('No resume data found');
-
-      // Clear localStorage and reset Redux state
-      localStorage.clear();
-      
-      // Parse the stored data
-      const resumeData = JSON.parse(data.resume_data);
-      const settingsData = data.settings_data ? JSON.parse(data.settings_data) : null;
-
-      // Small delay to ensure state is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Update Redux store with fresh data
-      dispatch(setResume(resumeData));
-      if (settingsData) {
-        dispatch(setSettings(settingsData));
-      }
-
-      // Set new data in localStorage
-      localStorage.setItem('resume-state', data.resume_data);
-      if (settingsData) {
-        localStorage.setItem('settings', JSON.stringify(settingsData));
-      }
-      localStorage.setItem('hasUsedAppBefore', 'true');
-      
-      // Redirect to resume builder
+      const resumeData = JSON.parse(resume.resume_data);
+      dispatch(setResumeData(resumeData));
       router.push('/resume-builder');
     } catch (error) {
-      console.error('Error editing resume:', error);
-      setError('Failed to edit resume. Please try again.');
-    } finally {
-      setEditingId(null);
+      console.error('Error parsing resume data:', error);
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteModal.resume) return;
+  const handleDeleteResume = async (resumeId: string) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this resume?');
+    if (!confirmDelete) return;
 
     try {
-      // Delete the PDF file from storage
-      const { error: storageError } = await supabase.storage
-        .from('resumes')
-        .remove([deleteModal.resume.file_path]);
-
-      if (storageError) throw storageError;
-
-      // Delete the resume record from the database
-      const { error: dbError } = await supabase
+      const { error } = await supabase
         .from('resumes')
         .delete()
-        .eq('id', deleteModal.resume.id);
+        .eq('id', resumeId);
 
-      if (dbError) throw dbError;
+      if (error) throw error;
 
-      // Update the local state to remove the deleted resume
-      const resumeId = deleteModal.resume.id; // Store ID before async operations
-      setResumes(resumes.filter(r => r.id !== resumeId));
+      // Update profiles table if this was the public resume
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('public_resume_id')
+          .eq('id', user.id)
+          .single();
+
+        if (profile && profile.public_resume_id === resumeId) {
+          await supabase
+            .from('profiles')
+            .update({
+              public_resume_id: null,
+              public_url: null,
+              public_resume_data: null,
+              is_public: false
+            })
+            .eq('id', user.id);
+        }
+      }
+
+      // Refresh the resumes list
+      fetchResumes();
     } catch (error) {
       console.error('Error deleting resume:', error);
-      throw error;
     }
   };
 
-  const handlePublishedClick = (resume: SavedResume) => {
-    if (publicResumeId === resume.id && publicUrl) {
-      setSuccessModal({ isOpen: true, url: publicUrl });
-    } else {
-      setPublishModal({ isOpen: true, resume });
-    }
+  const handlePublishResume = (resume: SavedResume) => {
+    setSelectedResume(resume);
+    setIsPublishModalOpen(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">My Resumes</h1>
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    );
-  }
+  const handlePublishSuccess = (url: string) => {
+    setPublishedUrl(url);
+    setIsSuccessModalOpen(true);
+  };
 
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">My Resumes</h1>
-        <div className="rounded-md bg-red-50 p-4 text-red-600">{error}</div>
-      </div>
-    );
-  }
+  const handleImportResume = async (resume: SavedResume) => {
+    try {
+      if (!resume.file_path) {
+        throw new Error('No file path found for this resume');
+      }
+
+      const success = await parseAndRedirectToBuilder(resume.file_path);
+      if (success) {
+        router.push('/resume-builder');
+      }
+    } catch (error) {
+      console.error('Error importing resume:', error);
+      alert('Failed to import resume. Please try again.');
+    }
+  };
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">My Resumes</h1>
-      
-      {resumes.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center text-gray-600">
-          <p>No resumes saved yet.</p>
-          <p className="mt-1 text-sm">Create a new resume or import an existing one to get started.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {resumes.map((resume) => (
-            <div
-              key={resume.id}
-              className="relative flex flex-col justify-between rounded-lg border border-gray-200 p-4 shadow-sm transition-shadow hover:shadow-md"
-            >
-              <button
-                onClick={() => setDeleteModal({ isOpen: true, resume })}
-                className="absolute right-2 top-2 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                aria-label="Delete resume"
-              >
-                <TrashIcon className="h-5 w-5" />
-              </button>
-              <div>
-                <h3 className="font-medium text-gray-900">{resume.name}</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Created {new Date(resume.created_at).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="mt-4 space-y-2">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleViewResume(resume.file_path)}
-                    className="flex-1 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => handleEdit(resume)}
-                    disabled={editingId === resume.id}
-                    className="flex-1 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-                  >
-                    {editingId === resume.id ? (
-                      <span className="flex items-center justify-center">
-                        <svg className="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Loading...
-                      </span>
-                    ) : (
-                      'Edit'
-                    )}
-                  </button>
-                </div>
-                <button
-                  onClick={() => handlePublishedClick(resume)}
-                  className={`w-full rounded-md px-3 py-1.5 text-sm font-medium ${
-                    publicResumeId === resume.id
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {publicResumeId === resume.id ? 'Published ✓' : 'Publish Resume'}
-                </button>
-              </div>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {resumes.map((resume) => (
+          <div
+            key={resume.id}
+            className="relative rounded-lg border border-gray-200 p-6 shadow-sm"
+          >
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">{resume.name}</h3>
+              <p className="text-sm text-gray-500">
+                Last updated: {new Date(resume.updated_at).toLocaleDateString()}
+              </p>
             </div>
-          ))}
-        </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => handleEditResume(resume)}
+                className="w-full rounded-md bg-primary px-4 py-2 text-white hover:opacity-90"
+              >
+                Edit Resume
+              </button>
+              <button
+                onClick={() => handlePublishResume(resume)}
+                className="w-full rounded-md border border-primary bg-white px-4 py-2 text-primary hover:bg-gray-50"
+              >
+                Publish
+              </button>
+              {resume.file_path && (
+                <button
+                  onClick={() => handleImportResume(resume)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-600 hover:bg-gray-50"
+                >
+                  Import from PDF
+                </button>
+              )}
+              <button
+                onClick={() => handleDeleteResume(resume.id)}
+                className="w-full rounded-md border border-red-200 bg-white px-4 py-2 text-red-600 hover:bg-red-50"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selectedResume && (
+        <PublishResumeModal
+          isOpen={isPublishModalOpen}
+          onClose={() => setIsPublishModalOpen(false)}
+          resume={selectedResume}
+          userName={userName}
+          onSuccess={handlePublishSuccess}
+        />
       )}
 
-      <DeleteResumeModal
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, resume: null })}
-        onDelete={handleDelete}
-        resumeName={deleteModal.resume?.name ?? ''}
-      />
-
-      <PublishResumeModal
-        isOpen={publishModal.isOpen}
-        onClose={() => setPublishModal({ isOpen: false, resume: null })}
-        resume={publishModal.resume!}
-        userName={user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''}
-        onSuccess={(url) => {
-          setPublishModal({ isOpen: false, resume: null });
-          setSuccessModal({ isOpen: true, url });
-        }}
-      />
-
       <PublishSuccessModal
-        isOpen={successModal.isOpen}
-        onClose={() => setSuccessModal({ isOpen: false, url: '' })}
-        publicUrl={successModal.url}
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        publicUrl={publishedUrl}
       />
     </div>
   );

@@ -2,6 +2,18 @@ import "globals.css";
 import { TopNavBar } from "components/TopNavBar";
 import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider } from "lib/context/AuthContext";
+import { 
+  roboto,
+  lato,
+  montserrat,
+  openSans,
+  raleway,
+  caladea,
+  lora,
+  robotoSlab,
+  playfairDisplay,
+  merriweather
+} from './lib/fonts';
 
 export const metadata = {
   title: "Prosper.cv - Resume Builder and Parser to help you get hired",
@@ -15,7 +27,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`
+      ${roboto.variable} 
+      ${lato.variable} 
+      ${montserrat.variable}
+      ${openSans.variable}
+      ${raleway.variable}
+      ${caladea.variable}
+      ${lora.variable}
+      ${robotoSlab.variable}
+      ${playfairDisplay.variable}
+      ${merriweather.variable}
+    `}>
       <body>
         <AuthProvider>
           <TopNavBar />

@@ -1,11 +1,11 @@
 "use client";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import logoSrc from "public/logopo.png";
-import { cx } from "lib/cx";
-import { createClient } from "lib/supabase/client";
-import { useAuth } from "lib/context/AuthContext";
+import { cx } from "../lib/cx";
+import { createClient } from "../lib/supabase/client";
+import { useAuth } from "../lib/context/AuthContext";
 
 export const TopNavBar = () => {
   const pathName = usePathname();
